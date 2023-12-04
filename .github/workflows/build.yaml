@@ -1,0 +1,70 @@
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * *'
+
+name: build-test
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.20.x
+    - uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-golang-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-golang-
+    - run: go env
+    - name: go build
+      run: go build -v ./...
+    - name: go test
+      run: go test -v ./...
+    - name: build ko2dockerfile
+      run: go build -o ko2dockerfile -v .
+    - name: Upload ko2dockerfile binary
+      uses: actions/upload-artifact@v3
+      with:
+        name: ko2dockerfile-bin
+        path: ko2dockerfile
+
+  # test-tekton:
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions/download-artifact@v3
+  #     with:
+  #       name: ko2dockerfile-bin
+  #   - uses: chainguard-dev/actions/setup-kind@main
+  #     with:
+  #       k8s-version: v1.24.x
+  #   - name: generate and start a simple task
+  #     run: |
+  #       chmod +x ./ko2dockerfile
+  #       ./ko2dockerfile generate tekton-task -f ./tests/simple-go/ko2dockerfile.yaml ko2dockerfile
+  #       ./ko2dockerfile generate tekton-task -f ./tests/simple-go/ko2dockerfile.yaml tkn
+  # test-docker:
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions/download-artifact@v3
+  #     with:
+  #       name: ko2dockerfile-bin
+  #   - name: generate and build a simple dockerfile
+  #     run: |
+  #       chmod +x ./ko2dockerfile
+  #       ./ko2dockerfile generate dockerfile -f ./tests/simple-go/ko2dockerfile.yaml ko2dockerfile | docker build -f - .
+  #       ./ko2dockerfile generate dockerfile -f ./tests/simple-go/ko2dockerfile.yaml tkn | docker build -f - https://github.com/tektoncd/cli.git#main
