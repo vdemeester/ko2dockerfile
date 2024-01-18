@@ -34,7 +34,7 @@ jobs:
     - name: build ko2dockerfile
       run: go build -o ko2dockerfile -v .
     - name: Upload ko2dockerfile binary
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ko2dockerfile-bin
         path: ko2dockerfile
