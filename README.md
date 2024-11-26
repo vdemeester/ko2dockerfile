@@ -23,3 +23,5 @@ ko build ./cmd/foo
 lord generate ./cmd/foo # output a dockerfile
 lord build ./cmd/foo # build using dockerfile
 ```
+
+FOO is bar
